@@ -1,0 +1,84 @@
+#!/usr/bin/env ruby
+
+in_name = nil
+out_name = nil
+state = nil
+error = nil
+array_name = 'data'
+
+ARGV.each do |a|
+  case state
+  when :infile:
+      begin
+        in_name = a
+        state = nil
+      end
+  when :outfile:
+      begin
+        out_name = a
+        state = nil
+      end
+  when :array:
+      begin
+        array_name = a
+        state = nil
+      end
+  else
+    case a
+    when '--infile':
+        state = :infile
+    when '--outfile':
+        state = :outfile
+    when '--array':
+        state = array_name
+    else
+      if in_name.nil?
+        in_name = a
+      else
+        if out_name.nil?
+          out_name = a
+        else
+          error = "Unknown parameter: #{a.inspect}"
+        end
+      end
+    end
+  end
+end
+
+if in_name.nil? || out_name.nil?
+  error = <<-END_OF_USAGE
+bin2h converts a given input file into a form that can be included into a C program as a header file.
+
+Usage:
+
+  bin2h --infile <filename> --outfile <filename> --array <name>
+
+or
+
+  bin2h <input file> <output file>
+
+END_OF_USAGE
+end
+
+if error.nil?
+  data = File.open(in_name, 'rb').read
+  
+  File.open(out_name, 'w') do |f|
+    f.puts "const unsigned char #{array_name}[#{data.length}] = {"
+    first_line = true
+    data.bytes.each_slice(32) do |a|
+      line = a.map { |b| ",#{b}" }.join
+      f.write("\t")
+      if first_line
+        f.puts line[1..-1]
+      else
+        f.puts line
+      end
+      first_line = false
+    end
+    f.puts "};"
+  end
+else
+  puts error
+end
+
