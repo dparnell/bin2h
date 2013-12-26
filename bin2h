@@ -30,7 +30,7 @@ ARGV.each do |a|
     when '--outfile'
         state = :outfile
     when '--array'
-        state = array_name
+        state = :array
     else
       if in_name.nil?
         in_name = a
